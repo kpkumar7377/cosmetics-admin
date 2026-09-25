@@ -211,28 +211,44 @@ export default function ProductForm({ initialProduct }) {
 
     setSaving(true);
 
+    const basePriceNum = Number(form.basePrice);
+    const isDiscountActive = Boolean(form.discount?.isActive);
+    const discountPercent = Number(form.discount?.percent);
+
+    // Verify discount has valid positive numbers
+    const hasValidDiscount =
+      isDiscountActive &&
+      !isNaN(discountPercent) &&
+      discountPercent > 0 &&
+      discountPercent <= 99;
+
     const payload = {
-      ...form,
       name: form.name.trim(),
       slug: form.slug.trim(),
-      basePrice: Number(form.basePrice),
-      stock: form.variants.length === 0 ? Number(form.stock) || 0 : undefined,
-      variants: form.variants.map((v) => ({
+      description: form.description?.trim() || "",
+      category: form.category,
+      images: form.images || [],
+      basePrice: basePriceNum,
+      isActive: Boolean(form.isActive),
+      isFeatured: Boolean(form.isFeatured),
+      codEligible: form.codEligible !== false,
+      variants: (form.variants || []).map((v) => ({
         sku: v.sku.trim(),
         label: v.label.trim(),
         price: Number(v.price),
-        stock: Number(v.stock),
+        stock: Number(v.stock) || 0,
       })),
       discount: {
-        isActive: Boolean(form.discount?.isActive),
-        percent: form.discount?.isActive
-          ? Number(form.discount.percent)
-          : undefined,
-        originalPrice: form.discount?.isActive
-          ? Number(form.basePrice)
-          : undefined,
+        isActive: hasValidDiscount,
+        percent: hasValidDiscount ? discountPercent : 0,
+        originalPrice: hasValidDiscount ? basePriceNum : basePriceNum,
       },
     };
+
+    // Only assign root stock if the product does NOT use variants
+    if (!form.variants || form.variants.length === 0) {
+      payload.stock = Number(form.stock) || 0;
+    }
 
     try {
       if (isEdit) {
